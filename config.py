@@ -5,9 +5,10 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 ROOT = pathlib.Path(__file__).parent
-load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / ".env", override=True)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL")
 MONO_TOKEN = os.getenv("MONO_TOKEN")
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")

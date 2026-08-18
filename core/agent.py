@@ -17,6 +17,9 @@ EXHAUSTED_FALLBACK = ("Не вклався у відведену кількіс�
 
 
 def _client():
+    if config.ANTHROPIC_BASE_URL:
+        return Anthropic(api_key=config.ANTHROPIC_API_KEY,
+                         base_url=config.ANTHROPIC_BASE_URL)
     return Anthropic(api_key=config.ANTHROPIC_API_KEY)
 
 
