@@ -15,7 +15,6 @@ MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1500"))
 MAX_TURNS = int(os.getenv("MAX_TURNS", "6"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "20"))
 TOOLS_VARIANT = os.getenv("TOOLS_VARIANT", "v2")
-MASK_OUTPUT = os.getenv("MASK_OUTPUT", "1") == "1"
 
 KYIV = timezone(timedelta(hours=3))
 
