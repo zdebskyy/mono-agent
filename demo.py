@@ -72,7 +72,16 @@ def scene_6():
     play("Скільки я витратив у доларах за минулий тиждень?", variant="v2")
 
 
-SCENES = {1: scene_1, 2: scene_2, 3: scene_3, 4: scene_4, 5: scene_5, 6: scene_6}
+def scene_7():
+    print("── 7. Порожній період: нічого не вигадувати ─────────────────")
+    print("   Вузьке нічне вікно, де операцій немає. Інструмент повертає")
+    print("   count: 0 — не помилку. Агент має сказати «операцій немає»,")
+    print("   а не показати найближчі або правдоподібні.\n")
+    play("Що я купував сьогодні між 3 і 4 ранку?")
+
+
+SCENES = {1: scene_1, 2: scene_2, 3: scene_3, 4: scene_4, 5: scene_5,
+          6: scene_6, 7: scene_7}
 
 if __name__ == "__main__":
     wanted = [int(a) for a in sys.argv[1:] if a.isdigit()] or sorted(SCENES)

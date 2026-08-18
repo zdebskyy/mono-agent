@@ -4,7 +4,7 @@ import time
 from anthropic import Anthropic
 
 import config
-from domain.tools import dispatch
+from domain.tools import dispatch, reset_session
 
 OUTCOMES = ("ok", "tool_error", "turns_exhausted", "api_error", "no_tool_used")
 
@@ -31,6 +31,8 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
     system = system or config.system_prompt()
     max_turns = max_turns or config.MAX_TURNS
     client = None
+
+    reset_session()
 
     messages = [{"role": "user", "content": query}]
     trace, failures = [], []

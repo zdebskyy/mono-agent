@@ -5,6 +5,12 @@ from domain import mono
 
 MAX_ITEMS = 150
 
+_known_accounts = set()
+
+
+def reset_session():
+    _known_accounts.clear()
+
 
 def _as_ts(value, field):
     try:
@@ -39,11 +45,18 @@ def list_accounts():
              "goal_minor": j.get("goal")}
             for j in data.get("jars", [])]
 
+    _known_accounts.update(item["id"] for item in accounts + jars if item.get("id"))
+
     return {"accounts": accounts, "jars": jars,
             "note": "balance_minor — у копійках/центах, ділити на 100"}
 
 
 def get_statement(account, from_ts, to_ts):
+    if account not in _known_accounts:
+        return mono.fail("unknown_account",
+                         f"account={account!r} не належить жодному рахунку цього клієнта",
+                         hint="Спершу викликати list_accounts і взяти id звідти")
+
     from_ts, err = _as_ts(from_ts, "from_ts")
     if err:
         return err
