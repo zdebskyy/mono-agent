@@ -15,6 +15,12 @@ EXHAUSTED_NUDGE = ("Ліміт кроків вичерпано. Більше і�
 EXHAUSTED_FALLBACK = ("Не вклався у відведену кількість кроків і не встиг зібрати дані. "
                       "Звузьте період або спитайте про один рахунок.")
 
+EMPTY_NUDGE = ("Ти не сформулював відповідь. Дай її текстом: підсумуй те, що показали "
+               "інструменти, не викликаючи їх більше.")
+
+EMPTY_FALLBACK = ("Дані зібрано, але сформулювати відповідь не вдалося — модель не "
+                  "повернула тексту. Спробуйте повторити запит.")
+
 
 def _client():
     if config.ANTHROPIC_BASE_URL:
@@ -65,6 +71,15 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
 
         if resp.stop_reason != "tool_use":
             answer = _text(resp)
+            if not answer:
+                messages.append({"role": "assistant", "content": resp.content})
+                messages.append({"role": "user", "content": EMPTY_NUDGE})
+                try:
+                    answer = _text(call(model=config.MODEL, max_tokens=config.MAX_TOKENS,
+                                        system=system, messages=messages))
+                except Exception:
+                    answer = ""
+                answer = answer or EMPTY_FALLBACK
             if not trace:
                 return finish(answer, "no_tool_used")
             if all(step["failed"] for step in trace):

@@ -33,5 +33,9 @@ def obj(value):
     return value
 
 
+CARD_TEXT = re.compile(r"\*\s?\d{4}")
+
+
 def text(value):
-    return MONEY_TEXT.sub(lambda m: _digits(m.group(1)) + m.group(2) + m.group(3), value)
+    value = MONEY_TEXT.sub(lambda m: _digits(m.group(1)) + m.group(2) + m.group(3), value)
+    return CARD_TEXT.sub(lambda m: _digits(m.group(0)), value)
