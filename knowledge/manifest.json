@@ -1,0 +1,164 @@
+[
+  {
+    "id": "umovy",
+    "title": "Умови і правила обслуговування в АТ «Універсал Банк»",
+    "page": "https://monobank.ua/terms",
+    "source": "https://monobank.ua/pdf/umovy-2026-08-21.pdf",
+    "effective_from": "2026-08-21",
+    "pages": 230,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "taryfy",
+    "title": "Тарифи на банківські послуги monobank",
+    "page": "https://monobank.ua/rates",
+    "source": "https://monobank.ua/pdf/taryfy-2026-07-31.pdf",
+    "effective_from": "2026-07-31",
+    "pages": 34,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "zminy-do-umov",
+    "title": "Зміни до Умов і правил",
+    "page": "https://monobank.ua/terms-changes",
+    "source": "https://monobank.ua/pdf/terms-changes-2026-08-21.pdf",
+    "effective_from": "2026-08-21",
+    "pages": 2,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "keshbek",
+    "title": "Умови нарахування кешбеку",
+    "page": "https://monobank.ua/terms-cashback",
+    "source": "https://monobank.ua/pdf/terms-cashback-2025-11-07.pdf",
+    "effective_from": "2025-11-07",
+    "pages": 1,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "pasport-kredytnoi-kartky",
+    "title": "Паспорт споживчого кредиту: кредитний ліміт на картці",
+    "page": "https://monobank.ua/card-credit-characteristics",
+    "source": "https://monobank.ua/pdf/141-karty-2026-07-01.pdf",
+    "effective_from": "2026-07-01",
+    "pages": 12,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "pasport-pokupka-chastynamy",
+    "title": "Паспорт споживчого кредиту: Покупка частинами і Розстрочка",
+    "page": "https://monobank.ua/installment-characteristics",
+    "source": "https://monobank.ua/pdf/141-installment-2026-07-15.pdf",
+    "effective_from": "2026-07-15",
+    "pages": 8,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "pasport-do-zavtra",
+    "title": "Паспорт споживчого кредиту: Кредит «До завтра»",
+    "page": "https://monobank.ua/kredyty-dozavra-characteristics",
+    "source": "https://monobank.ua/pdf/141-kredyty-dozavtra-2026-03-27.pdf",
+    "effective_from": "2026-03-27",
+    "pages": 7,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "monopay",
+    "title": "Умови сервісу monopay",
+    "page": "https://monobank.ua/monopay-terms",
+    "source": "https://monobank.ua/pdf/monopay-terms-2022-01-20.pdf",
+    "effective_from": "2022-01-20",
+    "pages": 4,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "otrymannia-perekaziv",
+    "title": "Умови отримання переказів (Shake to Pay)",
+    "page": "https://monobank.ua/receive-money-terms",
+    "source": "https://monobank.ua/pdf/shaketopay-receive-money-terms-2025-07-24.pdf",
+    "effective_from": "2025-07-24",
+    "pages": 3,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "publichnyi-zbir",
+    "title": "Договір про публічний збір коштів (банка для зборів)",
+    "page": "https://monobank.ua/dogovir-pro-publichnij-zbir",
+    "source": "https://monobank.ua/pdf/dogovir-pro-publichnij-zbir-2025-12-24.pdf",
+    "effective_from": "2025-12-24",
+    "pages": 13,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "restorany",
+    "title": "Умови сервісу «Ресторани»",
+    "page": "https://monobank.ua/restaurants-terms",
+    "source": "https://monobank.ua/pdf/restaurants-terms-2022-09-08.pdf",
+    "effective_from": "2022-09-08",
+    "pages": 4,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "zarplatnyi-proiekt",
+    "title": "Умови зарплатного проєкту",
+    "page": "https://monobank.ua/payroll-terms",
+    "source": "https://monobank.ua/pdf/payroll-terms-2022-07-14.pdf",
+    "effective_from": "2022-07-14",
+    "pages": 5,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "yasno",
+    "title": "Умови сервісу Yasno",
+    "page": "https://monobank.ua/yasno-terms",
+    "source": "https://monobank.ua/pdf/yasno-terms-2025-07-24.pdf",
+    "effective_from": "2025-07-24",
+    "pages": 3,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "obligatsii-taryfy",
+    "title": "Тарифи на операції з облігаціями",
+    "page": "https://monobank.ua/bonds-tariffs",
+    "source": "https://monobank.ua/pdf/bonds-tariffs-2025-12-02.pdf",
+    "effective_from": "2025-12-02",
+    "pages": 1,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "obligatsii-dogovir",
+    "title": "Договір про надання послуг з облігаціями: публічна частина",
+    "page": "https://monobank.ua/bonds-agreement-public-part",
+    "source": "https://monobank.ua/pdf/bonds-agreement-public-part-2026-02-26.pdf",
+    "effective_from": "2026-02-26",
+    "pages": 58,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "obligatsii-depozytarii",
+    "title": "Депозитарний договір: публічна частина",
+    "page": "https://monobank.ua/bonds-custodian-agreement-public-part",
+    "source": "https://monobank.ua/pdf/bonds-custodian-agreement-public-part-2025-10-17.pdf",
+    "effective_from": "2025-10-17",
+    "pages": 15,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "invest-taryfy",
+    "title": "Тарифи на інвестиційні послуги",
+    "page": "https://monobank.ua/invest-tariffs",
+    "source": "https://monobank.ua/pdf/invest-tariffs-2021-12-24.pdf",
+    "effective_from": "2021-12-24",
+    "pages": 1,
+    "fetched": "2026-08-24"
+  },
+  {
+    "id": "invest-dogovir",
+    "title": "Інвестиційний договір: публічна частина",
+    "page": "https://monobank.ua/invest-agreement-public-part",
+    "source": "https://monobank.ua/pdf/invest-agreement-public-part-2022-01-25.pdf",
+    "effective_from": "2022-01-25",
+    "pages": 37,
+    "fetched": "2026-08-24"
+  }
+]

@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 __pycache__/
 *.py[cod]
 out/
+
+# База знань: сам корпус у git, векторний індекс перебудовується локально
+knowledge/.index/

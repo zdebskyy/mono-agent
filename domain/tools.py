@@ -1,7 +1,8 @@
 from datetime import datetime
 
+import config
 from config import TOOLS_VARIANT, KYIV
-from domain import mono
+from domain import kb, mono
 
 MAX_ITEMS = 150
 
@@ -97,7 +98,30 @@ def get_statement(account, from_ts, to_ts):
     return out
 
 
-IMPL = {"list_accounts": list_accounts, "get_statement": get_statement}
+def search_docs(query, top_k=None):
+    hits = kb.semantic(query, top_k or config.TOP_K)
+    fragments = [{"doc": h["title"], "clause": h["clause"], "score": h["score"],
+                  "effective_from": h["effective_from"], "source": h["source"],
+                  "text": h["text"]} for h in hits]
+
+    if config.RAG_VARIANT == "naive":
+        return {"query": query, "found": len(fragments), "fragments": fragments}
+
+    passed = [f for f in fragments if f["score"] >= config.MIN_SCORE]
+    if not passed:
+        best = fragments[0]["score"] if fragments else 0.0
+        return {"query": query, "found": 0, "fragments": [],
+                "best_score": best, "threshold": config.MIN_SCORE,
+                "note": f"У базі немає фрагмента, достатньо близького до запиту: "
+                        f"найкраща схожість {best}, поріг {config.MIN_SCORE}. "
+                        f"Це означає «в документах цього немає», а не «шукай інакше»."}
+    return {"query": query, "found": len(passed), "fragments": passed,
+            "threshold": config.MIN_SCORE,
+            "note": "Відповідати лише цими фрагментами, посилаючись на doc і clause."}
+
+
+IMPL = {"list_accounts": list_accounts, "get_statement": get_statement,
+        "search_docs": search_docs}
 
 
 def dispatch(name, args):
@@ -149,7 +173,25 @@ V2 = [
          "required": ["account", "from_ts", "to_ts"]}},
 ]
 
-VARIANTS = {"v1": V1, "v2": V2}
+SEARCH_DOCS = {
+    "name": "search_docs",
+    "description": "Пошук по базі публічних документів monobank | Universal Bank: "
+                   "Умови і правила, Тарифи, кешбек, паспорти кредитів, договори "
+                   "по банці, облігаціях та сервісах. Шукає за змістом, а не за "
+                   "точними словами: формулювання користувача не мусить збігатися "
+                   "з формулюванням документа. Це єдине джерело відповідей про "
+                   "умови, комісії, ліміти й правила — з памʼяті на такі питання "
+                   "не відповідати.",
+    "input_schema": {"type": "object", "properties": {
+        "query": {"type": "string",
+                  "description": "Питання або опис ситуації своїми словами, "
+                                 "українською, повним реченням: так пошук по змісту "
+                                 "працює краще, ніж за двома ключовими словами."},
+        "top_k": {"type": "integer",
+                  "description": "Скільки фрагментів повернути, за замовчуванням 5."}},
+        "required": ["query"]}}
+
+VARIANTS = {"v1": V1 + [SEARCH_DOCS], "v2": V2 + [SEARCH_DOCS]}
 
 
 def tools(variant=None):

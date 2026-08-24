@@ -16,6 +16,15 @@ MAX_TOKENS = int(os.getenv("MAX_TOKENS", "1500"))
 MAX_TURNS = int(os.getenv("MAX_TURNS", "6"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "20"))
 TOOLS_VARIANT = os.getenv("TOOLS_VARIANT", "v2")
+RAG_VARIANT = os.getenv("RAG_VARIANT", "guarded")
+
+KNOWLEDGE = ROOT / "knowledge"
+EMBED_MODEL = os.getenv("EMBED_MODEL", "intfloat/multilingual-e5-large")
+EMBED_BATCH = int(os.getenv("EMBED_BATCH", "32"))
+CHUNK_CHARS = int(os.getenv("CHUNK_CHARS", "400"))
+CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "0"))
+TOP_K = int(os.getenv("TOP_K", "5"))
+MIN_SCORE = float(os.getenv("MIN_SCORE", "0.82"))
 
 KYIV = timezone(timedelta(hours=3))
 
@@ -34,6 +43,25 @@ RULES = """Ти — асистент по особистих фінансах mo
 - Якщо виписку обрізано (truncated), скажи про це прямо: підсумок неповний.
 - Якщо для точної відповіді бракує даних — скажи, чого саме бракує."""
 
+BARE = """Ти — асистент monobank з доступом до рахунків клієнта і до бази публічних
+документів банку. Відповідай стисло, українською."""
+
+DOCS_GUARDED = """Питання про умови, тарифи, комісії та правила банку шукай інструментом search_docs
+у базі публічних документів monobank.
+
+Робота з документами:
+- Відповідай ВИКЛЮЧНО тим, що є у знайдених фрагментах. Загальні знання про банки,
+  про monobank чи про українське законодавство використовувати заборонено.
+- Кожне твердження супроводжуй посиланням на документ і пункт із фрагмента,
+  у форматі «(Умови і правила, п. 2.3.1)».
+- Якщо search_docs повернув found: 0 — це означає, що в базі такого немає.
+  Скажи прямо: «У документах, які я маю, цього немає» — і зупинись.
+  Не переказуй те, що знаєш звідкись іще, не будуй правдоподібну відповідь
+  із сусідніх фрагментів і не пропонуй здогадку «зазвичай так буває».
+- Якщо фрагменти знайшлися, але відповіді на конкретне питання в них немає,
+  так і скажи: що саме знайшлося і чого бракує.
+- Не змішуй відповідь із документів із даними з рахунків: це різні джерела."""
+
 
 def now_line() -> str:
     now = datetime.now(KYIV)
@@ -41,5 +69,7 @@ def now_line() -> str:
             f"Unix-час зараз: {int(now.timestamp())}.")
 
 
-def system_prompt() -> str:
-    return f"{RULES}\n\n{now_line()}"
+def system_prompt(rag: str = None) -> str:
+    if (rag or RAG_VARIANT) == "naive":
+        return f"{BARE}\n\n{now_line()}"
+    return f"{RULES}\n\n{DOCS_GUARDED}\n\n{now_line()}"

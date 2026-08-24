@@ -3,17 +3,19 @@ import sys
 import config
 from core import report
 from core.agent import run_agent
-from domain import mono
+from domain import kb, mono
 from domain.tools import tools
 
 HIDDEN = "--mask" in sys.argv
 
 
-def play(query, variant="v2", max_turns=None):
+def play(query, variant="v2", max_turns=None, rag=None):
     max_turns = max_turns or config.MAX_TURNS
-    report.header(query, config.MODEL, variant, max_turns)
-    result = run_agent(query, tools(variant), max_turns=max_turns,
-                       on_step=report.stepper(HIDDEN))
+    rag = rag or config.RAG_VARIANT
+    config.RAG_VARIANT = rag
+    report.header(query, config.MODEL, variant, max_turns, rag)
+    result = run_agent(query, tools(variant), system=config.system_prompt(rag),
+                       max_turns=max_turns, on_step=report.stepper(HIDDEN))
     report.summary(result, HIDDEN)
     return result
 
@@ -85,8 +87,50 @@ def scene_7():
     play("Що я купував сьогодні між 3 і 4 ранку?")
 
 
+def scene_8():
+    print("── 8. База документів: питання іншими словами ───────────────")
+    print("   Питання поставлене живою мовою, у документі — канцелярит.")
+    print("   Пошук по змісту зводить їх разом, агент відповідає з")
+    print("   посиланням на пункт документа.\n")
+    play("Я загубив картку, що робити?")
+
+
+def scene_9():
+    print("── 9. Ембединги проти пошуку по словах ──────────────────────")
+    print("   Без моделі: той самий запит двома способами по одному й")
+    print("   тому ж індексу. BM25 шукає збіг слів, ембединги — збіг")
+    print("   змісту.\n")
+    for query in COMPARE:
+        print(f"Запит: «{query}»")
+        for label, hits in (("по словах", kb.keyword(query, 3)),
+                            ("по змісту", kb.semantic(query, 3))):
+            for i, hit in enumerate(hits, 1):
+                clause = f" п. {hit['clause']}" if hit["clause"] else ""
+                head = label if i == 1 else " " * len(label)
+                print(f"  {head} {i}. [{hit['score']:8.4f}] {hit['title']}{clause}")
+                print(f"              {' '.join(hit['text'].split())[:140]}")
+        print()
+
+
+def scene_10():
+    print("── 10. Челендж Б: питання не з бази ─────────────────────────")
+    print("   Питання звучить банківсько, але відповіді на нього в")
+    print("   документах немає. naive віддає моделі 5 найближчих")
+    print("   фрагментів попри слабку схожість; guarded відрізає їх")
+    print("   порогом і повертає found: 0.\n")
+    print("naive — без порога схожості:")
+    play(OFF_TOPIC, rag="naive")
+    print("guarded — поріг схожості плюс заборона відповідати з памʼяті:")
+    play(OFF_TOPIC, rag="guarded")
+
+
+COMPARE = ["Я загубив картку, що робити?",
+           "Магазин списав більше, ніж я купив — як оскаржити?"]
+
+OFF_TOPIC = "Які документи потрібні, щоб оформити військову пенсію?"
+
 SCENES = {1: scene_1, 2: scene_2, 3: scene_3, 4: scene_4, 5: scene_5,
-          6: scene_6, 7: scene_7}
+          6: scene_6, 7: scene_7, 8: scene_8, 9: scene_9, 10: scene_10}
 
 if __name__ == "__main__":
     wanted = [int(a) for a in sys.argv[1:] if a.isdigit()] or sorted(SCENES)

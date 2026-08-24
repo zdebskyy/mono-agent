@@ -8,6 +8,14 @@ def preview(output):
         return f"{output['error']}: {output.get('message', '')}"
     if "accounts" in output:
         return f"{len(output['accounts'])} рахунків, {len(output['jars'])} банок"
+    if "fragments" in output:
+        if not output["found"]:
+            return (f"0 фрагментів (найкраща схожість {output.get('best_score')} < "
+                    f"поріг {output.get('threshold')})")
+        top = output["fragments"][0]
+        clause = f" п. {top['clause']}" if top.get("clause") else ""
+        return (f"{output['found']} фрагментів · найкращий {top['score']}: "
+                f"{top['doc']}{clause}")
     if "transactions" in output:
         return f"{output['count']} операцій" + (" (обрізано)" if output.get("truncated") else "")
     return json.dumps(output, ensure_ascii=False)[:120]
@@ -29,9 +37,12 @@ def stepper(hidden=False, verbose=False):
     return on_step
 
 
-def header(query, model, variant, max_turns):
+def header(query, model, variant, max_turns, rag=None):
     print(f"\nЗапит: «{query}»")
-    print(f"Модель: {model} · інструменти: {variant} · ліміт кроків: {max_turns}\n")
+    line = f"Модель: {model} · інструменти: {variant}"
+    if rag:
+        line += f" · база знань: {rag}"
+    print(f"{line} · ліміт кроків: {max_turns}\n")
 
 
 def summary(result, hidden=False):
