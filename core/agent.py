@@ -88,9 +88,12 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
                 return finish(answer, "tool_error")
             return finish(answer, "ok")
 
-        results = []
+        results, delivered = [], None
         for block in [b for b in resp.content if b.type == "tool_use"]:
             output = dispatch(block.name, block.input)
+            if output.get("delivered"):
+                delivered = {"answer": block.input.get("answer", ""),
+                             "claims": output["verified_claims"]}
             step = {"turn": turn, "tool": block.name, "input": block.input,
                     "output": output, "failed": "error" in output}
             trace.append(step)
@@ -104,6 +107,9 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
 
         messages.append({"role": "assistant", "content": resp.content})
         messages.append({"role": "user", "content": results})
+
+        if delivered:
+            return finish(delivered["answer"], "ok", claims=delivered["claims"])
 
     messages[-1]["content"].append({"type": "text", "text": EXHAUSTED_NUDGE})
     try:

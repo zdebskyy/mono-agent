@@ -7,10 +7,12 @@ from domain import kb, mono
 MAX_ITEMS = 150
 
 _known_accounts = set()
+_shown_fragments = []
 
 
 def reset_session():
     _known_accounts.clear()
+    _shown_fragments.clear()
 
 
 def _as_ts(value, field):
@@ -124,13 +126,56 @@ def search_docs(query, top_k=None):
                 "note": f"У базі немає фрагмента, достатньо близького до запиту: "
                         f"найкраща схожість {best}, поріг {config.MIN_SCORE}. "
                         f"Це означає «в документах цього немає», а не «шукай інакше»."}
+    _shown_fragments.extend(passed)
     return {"query": query, "found": len(passed), "fragments": passed,
             "threshold": config.MIN_SCORE,
             "note": "Відповідати лише цими фрагментами, посилаючись на doc і clause."}
 
 
+def _flatten(text):
+    return " ".join((text or "").split()).casefold()
+
+
+def _verify_claim(claim):
+    quote = _flatten(claim.get("quote"))
+    if not quote:
+        return "порожня цитата"
+    clause = claim.get("clause")
+    matching = [f for f in _shown_fragments
+                if not clause or str(f.get("clause")) == str(clause)]
+    if clause and not matching:
+        return f"пункт {clause} не зустрічався у видачі search_docs"
+    if any(quote in _flatten(f["text"]) for f in matching):
+        return None
+    if any(quote in _flatten(f["text"]) for f in _shown_fragments):
+        return f"цитата є у видачі, але не в пункті {clause}"
+    return "цитати немає у жодному виданому фрагменті"
+
+
+def submit_answer(answer, claims=None):
+    claims = claims or []
+    if not _shown_fragments and claims:
+        return mono.fail("no_fragments",
+                         "search_docs ще не викликався, підтверджувати твердження нічим")
+
+    rejected = []
+    for i, claim in enumerate(claims):
+        problem = _verify_claim(claim)
+        if problem:
+            rejected.append({"claim": i, "text": claim.get("text"),
+                             "clause": claim.get("clause"), "problem": problem})
+
+    if rejected:
+        return {"error": "unverified_claims", "rejected": rejected,
+                "message": f"{len(rejected)} з {len(claims)} тверджень не підтверджені видачею",
+                "hint": "quote копіювати дослівно з поля text потрібного фрагмента; "
+                        "твердження, яке нічим підтвердити, — прибрати з відповіді"}
+
+    return {"delivered": True, "verified_claims": len(claims)}
+
+
 IMPL = {"list_accounts": list_accounts, "get_statement": get_statement,
-        "search_docs": search_docs}
+        "search_docs": search_docs, "submit_answer": submit_answer}
 
 
 def dispatch(name, args):
@@ -200,8 +245,39 @@ SEARCH_DOCS = {
                   "description": "Скільки фрагментів повернути, за замовчуванням 5."}},
         "required": ["query"]}}
 
+SUBMIT_ANSWER = {
+    "name": "submit_answer",
+    "description": "Єдиний спосіб віддати відповідь на питання про умови, тарифи "
+                   "чи правила банку. Кожне твердження, взяте з документів, "
+                   "супроводжується дослівною цитатою з фрагмента, який його "
+                   "підтверджує. Інструмент звіряє цитати з видачею search_docs і "
+                   "відхиляє відповідь, якщо цитати там немає. Відмова («у "
+                   "документах цього немає») подається так само, але з порожнім "
+                   "claims.",
+    "input_schema": {"type": "object", "properties": {
+        "answer": {"type": "string",
+                   "description": "Текст відповіді користувачу, українською."},
+        "claims": {"type": "array",
+                   "description": "По одному запису на кожне твердження з документів. "
+                                  "Порожній список — якщо відповідь нічого з "
+                                  "документів не стверджує.",
+                   "items": {"type": "object", "properties": {
+                       "text": {"type": "string",
+                                "description": "Твердження своїми словами."},
+                       "quote": {"type": "string",
+                                 "description": "Уривок, скопійований ДОСЛІВНО з поля "
+                                                "text фрагмента. Не переказ."},
+                       "doc": {"type": "string", "description": "Назва документа."},
+                       "clause": {"type": "string",
+                                  "description": "Номер пункту з поля clause фрагмента."}},
+                       "required": ["text", "quote"]}}},
+        "required": ["answer", "claims"]}}
+
 VARIANTS = {"v1": V1 + [SEARCH_DOCS], "v2": V2 + [SEARCH_DOCS]}
 
 
-def tools(variant=None):
-    return VARIANTS[variant or TOOLS_VARIANT]
+def tools(variant=None, rag=None):
+    chosen = VARIANTS[variant or TOOLS_VARIANT]
+    if (rag or config.RAG_VARIANT) == "guarded":
+        return chosen + [SUBMIT_ANSWER]
+    return chosen

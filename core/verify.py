@@ -21,6 +21,15 @@ def _haystack(trace):
 
 
 def answer(text, trace):
+    submitted = [step for step in trace
+                 if step["tool"] == "submit_answer" and not step["failed"]]
+    if submitted:
+        bounced = sum(1 for step in trace
+                      if step["tool"] == "submit_answer" and step["failed"])
+        return {"grounded": True, "mode": "claims", "ok": True,
+                "claims": submitted[-1]["output"]["verified_claims"],
+                "bounced": bounced}
+
     if not trace:
         return {"grounded": False,
                 "note": "жоден інструмент не викликався — звіряти немає з чим"}

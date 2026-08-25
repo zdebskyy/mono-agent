@@ -8,6 +8,11 @@ def preview(output):
         return f"{output['error']}: {output.get('message', '')}"
     if "accounts" in output:
         return f"{len(output['accounts'])} рахунків, {len(output['jars'])} банок"
+    if "rejected" in output:
+        return (f"unverified_claims: {output['message']} — "
+                + "; ".join(f"#{r['claim']} {r['problem']}" for r in output["rejected"]))
+    if output.get("delivered"):
+        return f"відповідь прийнято, підтверджених цитат: {output['verified_claims']}"
     if "fragments" in output:
         if not output["found"]:
             return (f"0 фрагментів (найкраща схожість {output.get('best_score')} < "
@@ -50,6 +55,13 @@ def checks(data):
         return
     if not data["grounded"]:
         print(f"Звірка з фрагментами: {data['note']}")
+        return
+    if data.get("mode") == "claims":
+        line = f"Звірка цитат: {data['claims']} підтверджено видачею"
+        if data["bounced"]:
+            print(f"{line} · відповідь відхилялась {data['bounced']} раз(и)")
+        else:
+            print(line)
         return
     line = f"Звірка з фрагментами: посилань {data['citations']}"
     if isinstance(data.get("figures"), int):
