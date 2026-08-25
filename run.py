@@ -13,7 +13,7 @@ def main():
     parser.add_argument("query", nargs="?", default=DEFAULT_QUERY)
     parser.add_argument("--tools", choices=["v1", "v2"], default=config.TOOLS_VARIANT)
     parser.add_argument("--rag", choices=["naive", "guarded"], default=config.RAG_VARIANT,
-                        help="поведінка пошуку по документах — див. челендж Б")
+                        help="naive — без порога і правил, guarded — з ними")
     parser.add_argument("--max-turns", type=int, default=config.MAX_TURNS)
     parser.add_argument("--model", default=config.MODEL)
     parser.add_argument("--verbose", action="store_true")
