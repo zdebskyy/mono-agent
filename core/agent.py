@@ -4,6 +4,7 @@ import time
 from anthropic import Anthropic
 
 import config
+from core import verify
 from domain.tools import dispatch, reset_session
 
 OUTCOMES = ("ok", "tool_error", "turns_exhausted", "api_error", "no_tool_used")
@@ -47,6 +48,7 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
 
     def finish(answer, outcome, **extra):
         return {"answer": answer, "outcome": outcome, "trace": trace,
+                "checks": verify.answer(answer, trace),
                 "failures": failures, "turns": len(trace),
                 "elapsed_sec": round(time.time() - started, 2),
                 "usage": usage, "query": query, **extra}

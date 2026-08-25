@@ -45,6 +45,24 @@ def header(query, model, variant, max_turns, rag=None):
     print(f"{line} · ліміт кроків: {max_turns}\n")
 
 
+def checks(data):
+    if not data:
+        return
+    if not data["grounded"]:
+        print(f"Звірка з фрагментами: {data['note']}")
+        return
+    line = f"Звірка з фрагментами: посилань {data['citations']}"
+    if isinstance(data.get("figures"), int):
+        line += f", чисел {data['figures']}"
+    print(f"{line} · {'усе підтверджено' if data['ok'] else 'Є НЕПІДТВЕРДЖЕНЕ'}")
+    if data["unknown_citations"]:
+        print(f"  ✗ немає у виданих фрагментах: п. {', п. '.join(data['unknown_citations'])}")
+    if data.get("unknown_figures"):
+        print(f"  ✗ числа, яких немає у виданих фрагментах: {', '.join(data['unknown_figures'])}")
+    if isinstance(data.get("figures"), str):
+        print(f"  · числа не звірялись — {data['figures'].split(': ')[1]}")
+
+
 def summary(result, hidden=False):
     if not result["trace"]:
         print("  інструменти не викликались")
@@ -55,5 +73,6 @@ def summary(result, hidden=False):
         print(f"Помилка: {result['error']}")
     if result["failures"]:
         print(f"Збої інструментів: {[f['error'] for f in result['failures']]}")
+    checks(result.get("checks"))
     answer = mask.text(result["answer"]) if hidden else result["answer"]
     print(f"\n{answer}\n")
