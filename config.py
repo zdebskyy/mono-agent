@@ -23,6 +23,7 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "intfloat/multilingual-e5-large")
 EMBED_BATCH = int(os.getenv("EMBED_BATCH", "32"))
 CHUNK_CHARS = int(os.getenv("CHUNK_CHARS", "400"))
 CHUNK_MAX = int(os.getenv("CHUNK_MAX", "1200"))
+PARENT_CHARS = int(os.getenv("PARENT_CHARS", "1600"))
 TOP_K = int(os.getenv("TOP_K", "5"))
 MIN_SCORE = float(os.getenv("MIN_SCORE", "0.83"))
 

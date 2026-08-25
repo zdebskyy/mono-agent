@@ -73,43 +73,47 @@ def hard_cut(sentence):
 
 
 def units(text):
-    for para in paragraphs(text):
+    for number, para in enumerate(paragraphs(text)):
         found = CLAUSE.match(para)
         clause = found.group(1) if found else None
         if len(para) <= config.CHUNK_CHARS:
-            yield para, clause
+            yield para, clause, None
             continue
         buf, size = [], 0
         for sentence in sentences(para):
             for piece in hard_cut(sentence):
                 if size and size + len(piece) > config.CHUNK_CHARS:
-                    yield " ".join(buf), clause
+                    yield " ".join(buf), clause, number
                     buf, size = [], 0
                 buf.append(piece)
                 size += len(piece)
         if buf:
-            yield " ".join(buf), clause
+            yield " ".join(buf), clause, number
 
 
 def split(text):
-    parts, buf, size, clause = [], [], 0, None
-    for unit, unit_clause in units(text):
+    parts, buf, size, clause, parent = [], [], 0, None, None
+    for unit, unit_clause, unit_parent in units(text):
         if size and size + len(unit) > config.CHUNK_CHARS:
-            parts.append(("\n".join(buf), clause))
-            buf, size, clause = [], 0, None
+            parts.append(("\n".join(buf), clause, parent))
+            buf, size, clause, parent = [], 0, None, None
+        if buf and unit_parent != parent:
+            parent = None
+        elif not buf:
+            parent = unit_parent
         buf.append(unit)
         size += len(unit)
         clause = clause or unit_clause
     if buf:
-        parts.append(("\n".join(buf), clause))
+        parts.append(("\n".join(buf), clause, parent))
     return parts
 
 
 def chunks_of(doc):
     return [{"doc": doc["id"], "title": doc["title"], "source": doc["source"],
              "effective_from": doc.get("effective_from"), "clause": clause,
-             "part": i, "text": text}
-            for i, (text, clause) in enumerate(split(doc["text"]))]
+             "parent": parent, "part": i, "text": text}
+            for i, (text, clause, parent) in enumerate(split(doc["text"]))]
 
 
 def build(verbose=True):
@@ -191,10 +195,44 @@ def _top(scores, chunks, top_k):
         if body in seen:
             continue
         seen.add(body)
-        out.append({"score": round(float(scores[i]), 4), **chunk})
+        out.append({"score": round(float(scores[i]), 4), "position": int(i), **chunk})
         if len(out) == top_k:
             break
     return out
+
+
+def _families():
+    if "families" not in _cache:
+        families = {}
+        for i, chunk in enumerate(index()["chunks"]):
+            if chunk["parent"] is not None:
+                families.setdefault((chunk["doc"], chunk["parent"]), []).append(i)
+        _cache["families"] = families
+    return _cache["families"]
+
+
+def expand(hit, budget=None):
+    budget = budget or config.PARENT_CHARS
+    family = _families().get((hit["doc"], hit["parent"]))
+    if not family or len(family) < 2:
+        return hit["text"], 1, len(family or [hit])
+    chunks = index()["chunks"]
+    first = last = family.index(hit["position"])
+    total = len(chunks[family[first]]["text"])
+    while True:
+        grew = False
+        if first > 0 and total + len(chunks[family[first - 1]]["text"]) <= budget:
+            first -= 1
+            total += len(chunks[family[first]]["text"])
+            grew = True
+        if last + 1 < len(family) and total + len(chunks[family[last + 1]]["text"]) <= budget:
+            last += 1
+            total += len(chunks[family[last]]["text"])
+            grew = True
+        if not grew:
+            break
+    text = " ".join(chunks[i]["text"] for i in family[first:last + 1])
+    return text, last - first + 1, len(family)
 
 
 def stats():

@@ -98,11 +98,20 @@ def get_statement(account, from_ts, to_ts):
     return out
 
 
+def _fragment(hit):
+    text, taken, total = kb.expand(hit)
+    out = {"doc": hit["title"], "clause": hit["clause"], "score": hit["score"],
+           "effective_from": hit["effective_from"], "source": hit["source"],
+           "text": text}
+    if total > 1:
+        out["context"] = (f"показано {taken} з {total} частин пункту"
+                          if taken < total else "пункт наведено повністю")
+    return out
+
+
 def search_docs(query, top_k=None):
     hits = kb.semantic(query, top_k or config.TOP_K)
-    fragments = [{"doc": h["title"], "clause": h["clause"], "score": h["score"],
-                  "effective_from": h["effective_from"], "source": h["source"],
-                  "text": h["text"]} for h in hits]
+    fragments = [_fragment(h) for h in hits]
 
     if config.RAG_VARIANT == "naive":
         return {"query": query, "found": len(fragments), "fragments": fragments}
