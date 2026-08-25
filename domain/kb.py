@@ -16,6 +16,10 @@ META = INDEX / "meta.json"
 CLAUSE = re.compile(r"^(\d{1,2}(?:\.\d{1,3}){1,4})\.?\s")
 PARA_START = re.compile(r"^(?:\d{1,2}(?:\.\d{1,3}){0,4}\.?\s|Стаття\s|Розділ\s|[IVX]{1,4}\.\s|●\s)")
 WORD = re.compile(r"[\w’'-]{3,}", re.UNICODE)
+SENTENCE_BREAK = re.compile(r"(?<=[.!?;])\s+(?=[«\"(\[0-9А-ЯІЇЄҐA-Z])")
+NUMBERING = re.compile(r"\d+(?:\.\d+)+")
+ABBREVIATIONS = frozenset("п пп ст стст ч чч абз розд гл рис дод грн дол євро тис млн "
+                          "млрд коп м вул буд кв обл смт р рр т ім проф акц напр див".split())
 
 _cache = {}
 
@@ -46,34 +50,66 @@ def paragraphs(text):
     return out
 
 
-def split(text):
-    parts, buf, size = [], [], 0
+def sentences(text):
+    out, start = [], 0
+    for match in SENTENCE_BREAK.finditer(text):
+        head = text[start:match.start()]
+        word = head.rstrip(".!?;").rsplit(" ", 1)[-1]
+        if len(word) < 2 or word.lower() in ABBREVIATIONS or NUMBERING.fullmatch(word):
+            continue
+        out.append(head)
+        start = match.end()
+    out.append(text[start:])
+    return [part for part in out if part.strip()]
+
+
+def hard_cut(sentence):
+    while len(sentence) > config.CHUNK_MAX:
+        cut = sentence.rfind(" ", config.CHUNK_MAX // 2, config.CHUNK_MAX)
+        cut = cut if cut > 0 else config.CHUNK_MAX
+        yield sentence[:cut].strip()
+        sentence = sentence[cut:].lstrip()
+    yield sentence
+
+
+def units(text):
     for para in paragraphs(text):
-        if size and size + len(para) > config.CHUNK_CHARS:
-            parts.append("\n".join(buf))
-            keep, kept = [], 0
-            for prev in reversed(buf):
-                if kept + len(prev) > config.CHUNK_OVERLAP:
-                    break
-                keep.insert(0, prev)
-                kept += len(prev)
-            buf, size = keep, kept
-        buf.append(para)
-        size += len(para)
+        found = CLAUSE.match(para)
+        clause = found.group(1) if found else None
+        if len(para) <= config.CHUNK_CHARS:
+            yield para, clause
+            continue
+        buf, size = [], 0
+        for sentence in sentences(para):
+            for piece in hard_cut(sentence):
+                if size and size + len(piece) > config.CHUNK_CHARS:
+                    yield " ".join(buf), clause
+                    buf, size = [], 0
+                buf.append(piece)
+                size += len(piece)
+        if buf:
+            yield " ".join(buf), clause
+
+
+def split(text):
+    parts, buf, size, clause = [], [], 0, None
+    for unit, unit_clause in units(text):
+        if size and size + len(unit) > config.CHUNK_CHARS:
+            parts.append(("\n".join(buf), clause))
+            buf, size, clause = [], 0, None
+        buf.append(unit)
+        size += len(unit)
+        clause = clause or unit_clause
     if buf:
-        parts.append("\n".join(buf))
+        parts.append(("\n".join(buf), clause))
     return parts
 
 
 def chunks_of(doc):
-    out = []
-    for i, text in enumerate(split(doc["text"])):
-        clause = CLAUSE.search(text)
-        out.append({"doc": doc["id"], "title": doc["title"], "source": doc["source"],
-                    "effective_from": doc.get("effective_from"),
-                    "clause": clause.group(1) if clause else None,
-                    "part": i, "text": text})
-    return out
+    return [{"doc": doc["id"], "title": doc["title"], "source": doc["source"],
+             "effective_from": doc.get("effective_from"), "clause": clause,
+             "part": i, "text": text}
+            for i, (text, clause) in enumerate(split(doc["text"]))]
 
 
 def build(verbose=True):
