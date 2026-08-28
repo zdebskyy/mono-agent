@@ -3,8 +3,9 @@ import sys
 import config
 from core import report
 from core.agent import run_agent
+from core.router import run as run_router
 from domain import kb, mono
-from domain.tools import tools
+from domain.tools import IMPL, policy_tools, tools
 
 HIDDEN = "--mask" in sys.argv
 
@@ -124,13 +125,57 @@ def scene_10():
     play(OFF_TOPIC, rag="guarded")
 
 
+def play_router(query):
+    result = run_router(query, on_step=report.stepper(HIDDEN))
+    report.route(result["route"], result["route_error"])
+    report.summary(result, HIDDEN)
+    return result
+
+
+def scene_11():
+    print("── 11. Роутер: три типи запитів → три вузькі спеціалісти ────")
+    print("   Гроші, правила банку і чат про самого агента зараз обробляє")
+    print("   один агент з ОБОМА наборами інструментів в одному промпті.")
+    print("   Роутер класифікує запит дешевим викликом (thinking вимкнено)")
+    print("   і веде до спеціаліста, який бачить лише свої інструменти.\n")
+    play_router("Скільки я витратив учора?")
+    play_router("Я загубив картку, що робити?")
+    play_router("Привіт! Розкажи, що ти вмієш і як тобою користуватись.")
+
+
+def scene_12():
+    print("── 12. Петля критика: явний ліміт спроб submit_answer ────────")
+    print("   submit_answer і так відхиляє непідтверджені цитати — це вже")
+    print("   де-факто критик. Тут ліміт спроб зроблено явним і окремим")
+    print("   від MAX_TURNS: submit_answer примусово зіпсовано, щоб")
+    print("   показати, що після 2 відхилень агент зупиняється сам, а не")
+    print("   мовчки витрачає весь бюджет кроків.\n")
+    saved = IMPL["submit_answer"]
+
+    def always_reject(answer, claims=None):
+        return {"error": "unverified_claims",
+                "rejected": [{"claim": 0, "text": "x", "clause": None,
+                             "problem": "демо: примусова відмова критика"}],
+                "message": "демо: примусова відмова для показу петлі критика"}
+
+    IMPL["submit_answer"] = always_reject
+    try:
+        result = run_agent("Я загубив картку, що робити?", policy_tools(),
+                           system=config.policy_prompt(), max_critic_attempts=2,
+                           on_step=report.stepper(HIDDEN))
+    finally:
+        IMPL["submit_answer"] = saved
+    report.summary(result, HIDDEN)
+
+
 COMPARE = ["Я загубив картку, що робити?",
            "Магазин списав більше, ніж я купив — як оскаржити?"]
 
 OFF_TOPIC = "Які документи потрібні, щоб оформити військову пенсію?"
 
 SCENES = {1: scene_1, 2: scene_2, 3: scene_3, 4: scene_4, 5: scene_5,
-          6: scene_6, 7: scene_7, 8: scene_8, 9: scene_9, 10: scene_10}
+          6: scene_6, 7: scene_7, 8: scene_8, 9: scene_9, 10: scene_10,
+          11: scene_11, 12: scene_12}
 
 if __name__ == "__main__":
     wanted = [int(a) for a in sys.argv[1:] if a.isdigit()] or sorted(SCENES)

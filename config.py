@@ -12,8 +12,10 @@ ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL")
 MONO_TOKEN = os.getenv("MONO_TOKEN")
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+ROUTER_MODEL = os.getenv("ROUTER_MODEL", MODEL)
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "3000"))
 MAX_TURNS = int(os.getenv("MAX_TURNS", "6"))
+MAX_CRITIC_ATTEMPTS = int(os.getenv("MAX_CRITIC_ATTEMPTS", "2"))
 HTTP_TIMEOUT = float(os.getenv("HTTP_TIMEOUT", "20"))
 TOOLS_VARIANT = os.getenv("TOOLS_VARIANT", "v2")
 RAG_VARIANT = os.getenv("RAG_VARIANT", "guarded")
@@ -47,6 +49,15 @@ RULES = """Ти — асистент по особистих фінансах mo
 BARE = """Ти — асистент monobank з доступом до рахунків клієнта і до бази публічних
 документів банку. Відповідай стисло, українською."""
 
+POLICY_INTRO = """Ти — асистент по документах monobank: умовах, тарифах, комісіях і
+правилах. Відповідай стисло, українською, простим текстом без Markdown-таблиць."""
+
+BOUNDARY = """Якщо питання виходить за межі твоєї спеціалізації і доступних тобі
+інструментів (наприклад, запит про умови чи правила банку, а в тебе лише доступ до
+рахунків — або навпаки), НЕ відповідай з памʼяті і не добудовуй правдоподібну
+процедуру. Прямо скажи, що це не твоя частина системи, і попроси переформулювати
+запит."""
+
 DOCS_GUARDED = """Питання про умови, тарифи, комісії та правила банку шукай інструментом search_docs
 у базі публічних документів monobank.
 
@@ -77,3 +88,15 @@ def system_prompt(rag: str = None) -> str:
     if (rag or RAG_VARIANT) == "naive":
         return f"{BARE}\n\n{now_line()}"
     return f"{RULES}\n\n{DOCS_GUARDED}\n\n{now_line()}"
+
+
+def finance_prompt() -> str:
+    return f"{RULES}\n\n{BOUNDARY}\n\n{now_line()}"
+
+
+def policy_prompt() -> str:
+    return f"{POLICY_INTRO}\n\n{DOCS_GUARDED}\n\n{BOUNDARY}\n\n{now_line()}"
+
+
+def other_prompt() -> str:
+    return f"{BARE}\n\n{now_line()}"

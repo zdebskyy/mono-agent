@@ -50,6 +50,16 @@ def header(query, model, variant, max_turns, rag=None):
     print(f"{line} · ліміт кроків: {max_turns}\n")
 
 
+def route(label, error=None):
+    names = {"finance": "FINANCE (гроші)", "policy": "POLICY (документи)",
+             "other": "OTHER (без інструментів)",
+             "both": "both — роутер не впізнав категорію, fallback на єдиного агента"}
+    line = f"Маршрут: {names.get(label, label)}"
+    if error:
+        line += f" · класифікація впала: {error}"
+    print(line)
+
+
 def checks(data):
     if not data:
         return

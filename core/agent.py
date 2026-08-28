@@ -7,7 +7,7 @@ import config
 from core import verify
 from domain.tools import dispatch, reset_session
 
-OUTCOMES = ("ok", "tool_error", "turns_exhausted", "api_error", "no_tool_used")
+OUTCOMES = ("ok", "tool_error", "turns_exhausted", "api_error", "no_tool_used", "critic_exhausted")
 
 EXHAUSTED_NUDGE = ("Ліміт кроків вичерпано. Більше інструментів не викликай. "
                    "Підсумуй те, що вже вдалося дізнатись, і прямо скажи користувачу, "
@@ -22,6 +22,14 @@ EMPTY_NUDGE = ("Ти не сформулював відповідь. Дай її
 EMPTY_FALLBACK = ("Дані зібрано, але сформулювати відповідь не вдалося — модель не "
                   "повернула тексту. Спробуйте повторити запит.")
 
+CRITIC_NUDGE = ("Критик відхилив submit_answer вже {n} раз(и) поспіль — ліміт спроб "
+                "вичерпано. Більше submit_answer не викликай. Дай текстову відповідь: "
+                "підсумуй лише те, що дійсно підтверджено знайденими фрагментами, і "
+                "прямо скажи, яке твердження не вдалось підкріпити дослівною цитатою.")
+
+CRITIC_FALLBACK = ("Не вдалося підкріпити відповідь дослівними цитатами за відведену "
+                   "кількість спроб. Спробуйте сформулювати питання вужче.")
+
 
 def _client():
     if config.ANTHROPIC_BASE_URL:
@@ -34,15 +42,17 @@ def _text(resp):
     return "".join(b.text for b in resp.content if b.type == "text").strip()
 
 
-def run_agent(query, tools, system=None, max_turns=None, on_step=None):
+def run_agent(query, tools, system=None, max_turns=None, max_critic_attempts=None, on_step=None):
     system = system or config.system_prompt()
     max_turns = max_turns or config.MAX_TURNS
+    max_critic_attempts = max_critic_attempts or config.MAX_CRITIC_ATTEMPTS
     client = None
 
     reset_session()
 
     messages = [{"role": "user", "content": query}]
     trace, failures = [], []
+    critic_attempts = 0
     started = time.time()
     usage = {"in": 0, "out": 0, "calls": 0}
 
@@ -99,6 +109,8 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
             trace.append(step)
             if step["failed"]:
                 failures.append({"tool": block.name, "error": output["error"]})
+                if block.name == "submit_answer":
+                    critic_attempts += 1
             if on_step:
                 on_step(step)
             results.append({"type": "tool_result", "tool_use_id": block.id,
@@ -110,6 +122,17 @@ def run_agent(query, tools, system=None, max_turns=None, on_step=None):
 
         if delivered:
             return finish(delivered["answer"], "ok", claims=delivered["claims"])
+
+        if critic_attempts >= max_critic_attempts:
+            messages[-1]["content"].append(
+                {"type": "text", "text": CRITIC_NUDGE.format(n=critic_attempts)})
+            try:
+                resp = call(model=config.MODEL, max_tokens=config.MAX_TOKENS,
+                            system=system, messages=messages)
+                answer = _text(resp) or CRITIC_FALLBACK
+            except Exception:
+                answer = CRITIC_FALLBACK
+            return finish(answer, "critic_exhausted", critic_attempts=critic_attempts)
 
     messages[-1]["content"].append({"type": "text", "text": EXHAUSTED_NUDGE})
     try:

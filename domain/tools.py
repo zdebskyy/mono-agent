@@ -281,3 +281,13 @@ def tools(variant=None, rag=None):
     if (rag or config.RAG_VARIANT) == "guarded":
         return chosen + [SUBMIT_ANSWER]
     return chosen
+
+
+def finance_tools(variant=None):
+    return {"v1": V1, "v2": V2}[variant or TOOLS_VARIANT]
+
+
+def policy_tools(rag=None):
+    if (rag or config.RAG_VARIANT) == "guarded":
+        return [SEARCH_DOCS, SUBMIT_ANSWER]
+    return [SEARCH_DOCS]
