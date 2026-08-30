@@ -1310,12 +1310,6 @@ api.monobank.ua (те саме джерело правди, що і в моду�
 pip install "mcp[cli]"
 ```
 
-Версія `mcp` на момент написання — `2.1.1`. У ній `FastMCP` перейменували в
-`MCPServer` (`from mcp.server.mcpserver import MCPServer`), старий шлях
-`mcp.server.fastmcp` навмисно кидає `ModuleNotFoundError` з посиланням на
-migration guide — перевірено фактичним `ModuleNotFoundError`, не документацією
-з памʼяті. API декоратора (`@mcp.tool()`, `.run()`) не змінилось.
-
 ## Inspector
 
 ```bash
@@ -1343,7 +1337,7 @@ claude mcp list          # mono-tools — ✔ Connected
 Реєстрація локальна для проєкту (лежить у `~/.claude.json` під шляхом цієї
 директорії) — інша сесія Claude Code в іншій директорії сервера не побачить.
 
-## Перевірка: чужий агент користується нашим кодом
+## Перевірка
 
 Нова сесія Claude Code (`claude -p`, без жодних інструкцій крім самого
 запиту) сама:
@@ -1357,10 +1351,8 @@ claude mcp list          # mono-tools — ✔ Connected
    `{"error": "unknown_account", "hint": "Спершу викликати list_accounts..."}`
    і не зациклилась на тому самому хибному аргументі.
 
-Це і є суть завдання: `mcp_server.py` написаний нами, але агент, що ним
-користується, — не `core/agent.py`, а Claude Code. Наш код бачить лише
-JSON-RPC запит `tools/call` з боку клієнта, про існування якого не знає
-нічого, крім опису тулів.
+Наш код бачить лише JSON-RPC запит `tools/call` з боку клієнта, про
+існування якого не знає нічого, крім опису тулів.
 
 # Структура
 
