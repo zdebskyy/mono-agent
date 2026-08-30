@@ -1325,7 +1325,9 @@ mcp dev mcp_server.py
    в коді (не якийсь дефолтний `str`/`int`);
 3. **Execute Tool** на `list_accounts` без жодного проміжного клієнта
    повернув реальну відповідь monobank — той самий JSON, що і в тесті нижче
-   через Claude Code.
+   через Claude Code;
+4. вкладка **Protocol** показує сирий `tools/call` з параметрами
+   `{"name": "list_accounts", "arguments": {}}`.
 
 ## Підключення до Claude Code
 
